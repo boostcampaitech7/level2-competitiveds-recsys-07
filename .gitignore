@@ -247,4 +247,6 @@ Temporary Items
 
 # ETC
 data
-.csv
+*.csv
+*.ipynb 
+*.html 
