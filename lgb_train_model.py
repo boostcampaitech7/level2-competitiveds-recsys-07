@@ -19,7 +19,9 @@ X_test = test_data.drop(columns="deposit")
 y_test = test_data["deposit"]
 
 
-def lgb_model_train(trial: Any, X_train: pd.DataFrame, y_train: pd.Series) -> float:
+def lgb_model_train(
+    trial: Any, X_train: pd.DataFrame, y_train: pd.Series, cv: int
+) -> float:
 
     params = {
         "n_estimators": trial.suggest_int("n_estimators", 50, 300),
@@ -32,7 +34,7 @@ def lgb_model_train(trial: Any, X_train: pd.DataFrame, y_train: pd.Series) -> fl
         "random_state": 42,
     }
 
-    kfold = KFold(n_splits=5, shuffle=True, random_state=42)
+    kfold = KFold(n_splits=cv, shuffle=True, random_state=42)
     mae_scores = []
 
     for train_idx, valid_idx in kfold.split(X_train):
@@ -64,7 +66,9 @@ def lgb_model_train(trial: Any, X_train: pd.DataFrame, y_train: pd.Series) -> fl
 
 # Initialize and run the study
 study = optuna.create_study(direction="minimize")  # Minimize MAE
-study.optimize(lambda trial: lgb_model_train(trial, X_train, y_train), n_trials=100)
+study.optimize(
+    lambda trial: lgb_model_train(trial, X_train, y_train, cv=5), n_trials=100
+)
 
 # Output the results of the best trial
 trial = study.best_trial
