@@ -3,64 +3,54 @@ import numpy as np
 import optuna
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor, StackingRegressor
-from sklearn.linear_model import Lasso, Ridge
+from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import KFold
 from xgboost import XGBRegressor
 
-# 데이타 불러오기
-train_data = pd.read_csv("../../data/train.csv")
-test_data = pd.read_csv("../../data/test.csv")
 
-X_train = train_data.drop(columns="deposit")
-y_train = train_data["deposit"]
-X_test = test_data.drop(columns="deposit")
-y_test = test_data["deposit"]
-# 파라미터들 받아오기
-
-lgb_params = {}
-rf_params = {}
-xgb_params = {}
-with open("parameters.txt", "r") as file:
-    current_model = None
-    for line in file:
-        line = line.strip()
-
-        # Check if the line indicates a new model's parameters
-        if line == "lgb_params :":
-            current_model = lgb_params
-        elif line == "rf_params :":
-            current_model = rf_params
-        elif line == "xgb_params :":
-            current_model = xgb_params
-        elif current_model is not None and ": " in line:
-            # Split the key and value, and store them in the current model's dictionary
-            key, value = line.split(": ")
-            # Try to convert the value to int or float if possible, else keep as string
-            try:
-                value = float(value) if "." in value else int(value)
-            except ValueError:
-                pass  # If it can't be converted, keep it as a string
-            current_model[key] = value
+def load_data(train_path: str, test_path: str):
+    train_data = pd.read_csv(train_path)
+    test_data = pd.read_csv(test_path)
+    X_train = train_data.drop(columns="deposit")
+    y_train = train_data["deposit"]
+    X_test = test_data.drop(columns="deposit")
+    y_test = test_data["deposit"]
+    return X_train, y_train, X_test, y_test
 
 
-# meta (ridge) 를 이용하여 한번더 학습
-def objective(trial, X_train, y_train):
-    # Define the base models (first layer)
+def load_model_params(file_path: list):
+    params = {"lgb_params": {}, "rf_params": {}, "xgb_params": {}}
+    for file in file_path:
+        current_model = None
+        with open(file, "r") as file:
+            for line in file:
+                line = line.strip()
+                if line in params.keys():
+                    current_model = params[line]
+                elif current_model is not None and ": " in line:
+                    key, value = line.split(": ")
+                    try:
+                        value = float(value) if "." in value else int(value)
+                    except ValueError:
+                        pass
+                    current_model[key] = value
+    return params
+
+
+def objective(trial, X_train, y_train, params):
     base_models = [
-        ("xgb", XGBRegressor(**xgb_params)),
-        ("lgb", lgb.LGBMRegressor(**lgb_params)),
-        ("rf", RandomForestRegressor(**rf_params)),
+        ("xgb", XGBRegressor(**params["xgb_params"])),
+        ("lgb", lgb.LGBMRegressor(**params["lgb_params"])),
+        ("rf", RandomForestRegressor(**params["rf_params"])),
     ]
 
-    # Define the meta-model (second layer)
     meta_model = Ridge(alpha=trial.suggest_float("alpha_ridge", 0.01, 10.0))
 
-    # Create the StackingRegressor ensemble
     stacking_model = StackingRegressor(
         estimators=base_models,
-        final_estimator=meta_model,  # Ridge is the meta-model
-        cv=5,  # Cross-validation for training meta-model
+        final_estimator=meta_model,
+        cv=5,
     )
 
     kfold = KFold(n_splits=5, shuffle=True, random_state=42)
@@ -70,44 +60,68 @@ def objective(trial, X_train, y_train):
         x_train_fold, x_valid_fold = X_train.iloc[train_idx], X_train.iloc[valid_idx]
         y_train_fold, y_valid_fold = y_train.iloc[train_idx], y_train.iloc[valid_idx]
 
-        # Train the model
         stacking_model.fit(x_train_fold, y_train_fold)
-
-        # Predict on validation set
         y_pred_valid = stacking_model.predict(x_valid_fold)
-
-        # Calculate Mean Absolute Error (MAE)
         mae = mean_absolute_error(y_valid_fold, y_pred_valid)
         mae_scores.append(mae)
+
     return np.mean(mae_scores)
 
 
-study = optuna.create_study(direction="minimize")  # Minimize MAE
-study.optimize(lambda trial: objective(trial, X_train, y_train), n_trials=100)
+def optimize_hyperparameters(X_train, y_train, params):
+    study = optuna.create_study(direction="minimize")
+    study.optimize(
+        lambda trial: objective(trial, X_train, y_train, params), n_trials=100
+    )
+    trial = study.best_trial
 
-# Output the results of the best trial
-trial = study.best_trial
-print(f"Sampler is {study.sampler.__class__.__name__}")
-print("Best MAE: {}".format(trial.value))
-print("Best hyperparameters: {}".format(trial.params))
+    print(f"Sampler is {study.sampler.__class__.__name__}")
+    print(f"Best MAE: {trial.value}")
+    print("Best hyperparameters: {}".format(trial.params))
+    best_params = trial.params
 
-# 베스트 하이퍼파라미터 설정
-best_params = trial.params
-meta_model = Ridge(alpha=best_params)
-base_models = [
-    ("xgb", XGBRegressor(**xgb_params)),
-    ("lgb", lgb.LGBMRegressor(**lgb_params)),
-    ("rf", RandomForestRegressor(**rf_params)),
-]
-stacking_model = StackingRegressor(
-    estimators=base_models,
-    final_estimator=meta_model,  # Ridge is the meta-model
-    cv=5,  # Cross-validation for training meta-model
-)
-stacking_model.fit(X_train, y_train)
+    return best_params
 
-# 예측
-y_test_pred = stacking_model.predict(y_test)
-sample_submission = pd.read_csv("../../data/sample_submission.csv")
-sample_submission["deposit"] = y_test_pred
-sample_submission.to_csv("output.csv", index=False, encoding="utf-8-sig")
+
+def train_and_predict(X_train, y_train, X_test, best_params, params):
+    meta_model = Ridge(alpha=best_params["alpha_ridge"])
+    base_models = [
+        ("xgb", XGBRegressor(**params["xgb_params"])),
+        ("lgb", lgb.LGBMRegressor(**params["lgb_params"])),
+        ("rf", RandomForestRegressor(**params["rf_params"])),
+    ]
+
+    stacking_model = StackingRegressor(
+        estimators=base_models,
+        final_estimator=meta_model,
+        cv=5,
+    )
+
+    stacking_model.fit(X_train, y_train)
+    y_test_pred = stacking_model.predict(X_test)
+
+    return y_test_pred
+
+
+def save_submission(y_test_pred, submission_path, output_path):
+    sample_submission = pd.read_csv(submission_path)
+    sample_submission["deposit"] = y_test_pred
+    sample_submission.to_csv(output_path, index=False, encoding="utf-8-sig")
+
+
+train_path = "../../data/train.csv"
+test_path = "../../data/test.csv"
+params_path = ["parameters_lgb.txt", "parameters_xgb.txt", "parameters_rf.txt"]
+submission_path = "../../data/sample_submission.csv"
+output_path = "output.csv"
+
+
+X_train, y_train, X_test, y_test = load_data(train_path, test_path)
+
+params = load_model_params(params_path)
+
+best_params = optimize_hyperparameters(X_train, y_train, params)
+
+y_test_pred = train_and_predict(X_train, y_train, X_test, best_params, params)
+
+save_submission(y_test_pred, submission_path, output_path)
