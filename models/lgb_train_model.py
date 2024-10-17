@@ -94,7 +94,7 @@ print("\nFeature Importances:")
 print(importance_df)
 
 # Save the best hyperparameters to parameters.txt
-with open("parameters.txt", "w+") as f:
+with open("parameters_lgb.txt", "w+") as f:
     f.write("lgb_params :\n")
     for key, value in trial.params.items():
         f.write(f"{key}: {value}\n")

@@ -80,7 +80,7 @@ print("Best hyperparameters: {}".format(trial.params))
 
 
 # 최적의 파라미터들을 parameters.txt에 넣음.
-with open("parameters.txt", "w+") as f:
+with open("parameters_xgb.txt", "w+") as f:
     f.write("xgb_params :\n")
     for key, value in trial.params.items():
         f.write(f"{key}: {value}\n")
