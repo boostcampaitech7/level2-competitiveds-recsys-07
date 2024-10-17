@@ -1,0 +1,13 @@
+black==24.8.0
+flake8==7.0.0
+matplotlib==3.9.2
+matplotlib-inline==0.1.6
+numpy==1.26.4
+pandas==2.2.2
+pip==23.1.2
+pre-commit==3.8.0
+scikit-image==0.23.2
+scikit-learn==1.5.1
+scipy==1.13.1
+seaborn==0.13.2
+tqdm==4.66.5
