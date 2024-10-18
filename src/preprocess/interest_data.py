@@ -1,40 +1,35 @@
-import os
-
 import pandas as pd
 
 path = "../../data"
 
-train_data = pd.read_csv(os.path.join(path, "train.csv"))
-test_data = pd.read_csv(os.path.join(path, "test.csv"))
-sample_submission = pd.read_csv(os.path.join(path, "sample_submission.csv"))
-subwayinfo = pd.read_csv(os.path.join(path, "subwayinfo.csv"))
-schoolinfo = pd.read_csv(os.path.join(path, "schoolinfo.csv"))
-parkinfo = pd.read_csv(os.path.join(path, "parkinfo.csv"))
-interestRate = pd.read_csv(os.path.join(path, "interestRate.csv"))
+train_data = pd.read_csv(f"{path}/train.csv")
+test_data = pd.read_csv(f"{path}/test.csv")
+# df_school = pd.read_csv(f"{path}/schoolinfo.csv")
+# df_park = pd.read_csv(f"{path}/parkInfo.csv")
+interestRate = pd.read_csv(f"{path}/interestRate.csv")
+# df_subway = pd.read_csv(f"{path}/subwayInfo.csv")
+# df_sample_submission = pd.read_csv(f"{path}/sample_submission.csv")
 
-# train: 중복제거, age 음수 제거
-train_data = (
-    train_data[train_data.age >= 0].reset_index(drop=True).drop(columns="index")
-)  # .to_csv("train.csv", index=False)
-
-# 공원: 중복제거, 면적 0 이하 제거
-parkinfo = parkinfo.drop_duplicates()
-parkinfo = parkinfo[parkinfo.area > 0]
-# parkinfo.reset_index(drop=True).to_csv("park.csv", index=False)
-
-# 학교: 중복제거
-schoolinfo = schoolinfo.drop_duplicates()
-# schoolinfo.reset_index(drop=True).to_csv("school.csv", index=False)
-
-# 지하철: 중복 제거
-subwayinfo = subwayinfo.drop_duplicates()
-# subwayinfo.reset_index(drop=True).to_csv("subway.csv", index=False)
-
-train_data = train_data.sort_values("contract_year_month")
-interestRate = interestRate.sort_values("year_month")
 # train data: 201904 ~ 202312
 # test data: 202401 ~ 202406
 # interestRate: 201812 ~ 202405
+
+# train: 중복제거, age 음수 제거
+train_data[train_data.age >= 0]  # .to_csv("train.csv", index=False)
+
+# # 공원: 중복제거, 면적 0 이하 제거
+# df_park_pp = df_park.drop_duplicates()
+# df_park_pp = df_park_pp[df_park_pp.area > 0]
+# df_park_pp.reset_index(drop=True).to_csv("park.csv", index=False)
+
+# # 학교: 중복제거
+# df_school_pp = df_school.drop_duplicates()
+# df_school_pp.reset_index(drop=True).to_csv("school.csv", index=False)
+
+# # 지하철: 중복 제거
+# df_subway_pp = df_subway.drop_duplicates()
+# df_subway_pp.reset_index(drop=True).to_csv("subway.csv", index=False)
+
 
 interestRate["interest_rate_lag1"] = interestRate["interest_rate"].shift(1)
 interestRate["interest_rate_lag2"] = interestRate["interest_rate"].shift(2)
