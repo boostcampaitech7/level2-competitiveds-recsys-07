@@ -7,7 +7,7 @@ from lightgbm import LGBMRegressor
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import KFold
 
-## 함수화 함수 따로 만들기 (data_pre_processor로 넣기)
+# 함수화 함수 따로 만들기 (data_pre_processor로 넣기)
 train_data = pd.read_csv("../../data/train.csv")
 test_data = pd.read_csv("../../data/test.csv")
 
@@ -15,13 +15,10 @@ test_data = pd.read_csv("../../data/test.csv")
 # train 및 test 구분
 X_train = train_data.drop(columns="deposit")
 y_train = train_data["deposit"]
-X_test = test_data.drop(columns="deposit")
-y_test = test_data["deposit"]
+X_test = test_data
 
 
-def lgb_model_train(
-    trial: Any, X_train: pd.DataFrame, y_train: pd.Series, cv: int
-) -> float:
+def lgb_model_train(trial: Any, X_train: pd.DataFrame, y_train: pd.Series, cv: int) -> float:
 
     params = {
         "n_estimators": trial.suggest_int("n_estimators", 50, 300),
@@ -66,9 +63,7 @@ def lgb_model_train(
 
 # Initialize and run the study
 study = optuna.create_study(direction="minimize")  # Minimize MAE
-study.optimize(
-    lambda trial: lgb_model_train(trial, X_train, y_train, cv=5), n_trials=100
-)
+study.optimize(lambda trial: lgb_model_train(trial, X_train, y_train, cv=5), n_trials=100)
 
 # Output the results of the best trial
 trial = study.best_trial
@@ -86,9 +81,9 @@ feature_importances = lgb_model.feature_importances_
 features = X_train.columns
 
 # Print feature importances
-importance_df = pd.DataFrame(
-    {"Feature": features, "Importance": feature_importances}
-).sort_values(by="Importance", ascending=False)
+importance_df = pd.DataFrame({"Feature": features, "Importance": feature_importances}).sort_values(
+    by="Importance", ascending=False
+)
 
 print("\nFeature Importances:")
 print(importance_df)

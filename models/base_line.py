@@ -7,15 +7,15 @@ from lightgbm import LGBMRegressor
 from sklearn.metrics import mean_absolute_error
 
 # 베이스라인 모델 LightGBM
-train_data = pd.read_csv("../train.csv")
-test_data = pd.read_csv("../test.csv")
-sample_submission = pd.read_csv("../../../data/sample_submission.csv")
-
+train_data = pd.read_csv("/data/ephemeral/home/data/ryu/facilities_added_train.csv")
+test_data = pd.read_csv("/data/ephemeral/home/data/ryu/facilities_added_test.csv")
+sample_submission = pd.read_csv("/data/ephemeral/home/data/original/sample_submission.csv")
 
 # train 및 test 구분
-X_train = train_data.drop(columns=["deposit", "deposit_mean"])
+X_train = train_data.drop(columns=["deposit"])  # , "deposit_mean"
 y_train = train_data[["contract_year_month", "deposit"]]
 X_test = test_data.copy()
+
 if "index" in X_train.columns:
     X_train = X_train.drop(columns="index")
 if "index" in X_test.columns:
@@ -24,8 +24,8 @@ if "index" in X_test.columns:
 if list(X_train.columns) != list(X_test.columns):
     raise ValueError("Train and Test columns do not match.")
     sys.exit()
-# validation 파트
 
+# validation 파트
 
 # holdout 구분
 holdout_start = 202307
@@ -42,7 +42,6 @@ y_trainout = y_train[
 ].drop(columns="contract_year_month")
 
 
-# 디폴트 파라미터들
 params = {
     "n_estimators": 100,
     "learning_rate": 0.1,
@@ -76,14 +75,9 @@ print(f"LightGBM MAE: {lgb_holdout_mae:.2f}")
 # 피쳐 임포턴스
 feature_importance = lgb_model1.feature_importances_
 feature_names = X_train.columns
-
-# Create a DataFrame for better visualization
 importance_df = pd.DataFrame({"Feature": feature_names, "Importance": feature_importance})
-
-# Sort by importance
 importance_df = importance_df.sort_values(by="Importance", ascending=False)
 
-# Display the importance DataFrame
 print(importance_df)
 
 # Plotting feature importance
@@ -94,10 +88,10 @@ plt.show()
 
 
 # 제출
-
 y_train = y_train.drop(columns="contract_year_month")
 lgb_model = LGBMRegressor(**params)
 lgb_model.fit(X_train, y_train)
+
 lgb_test_pred = lgb_model.predict(X_test)
 sample_submission["deposit"] = lgb_test_pred
 sample_submission.to_csv("output.csv", index=False, encoding="utf-8-sig")
