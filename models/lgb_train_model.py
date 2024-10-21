@@ -4,6 +4,7 @@ import numpy as np
 import optuna
 import pandas as pd
 from lightgbm import LGBMRegressor
+from optuna.samplers import TPESampler
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import KFold
 
@@ -62,7 +63,10 @@ def lgb_model_train(trial: Any, X_train: pd.DataFrame, y_train: pd.Series, cv: i
 
 
 # Initialize and run the study
-study = optuna.create_study(direction="minimize")  # Minimize MAE
+seed = 42
+sampler = TPESampler(seed=seed)
+
+study = optuna.create_study(direction="minimize", sampler=sampler)  # Minimize MAE
 study.optimize(lambda trial: lgb_model_train(trial, X_train, y_train, cv=5), n_trials=100)
 
 # Output the results of the best trial

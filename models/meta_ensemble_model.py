@@ -2,6 +2,7 @@ import lightgbm as lgb
 import numpy as np
 import optuna
 import pandas as pd
+from optuna.samplers import TPESampler
 from sklearn.ensemble import RandomForestRegressor, StackingRegressor
 from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_absolute_error
@@ -69,10 +70,10 @@ def objective(trial, X_train, y_train, params):
 
 
 def optimize_hyperparameters(X_train, y_train, params):
-    study = optuna.create_study(direction="minimize")
-    study.optimize(
-        lambda trial: objective(trial, X_train, y_train, params), n_trials=100
-    )
+    seed = 42
+    sampler = TPESampler(seed=seed)
+    study = optuna.create_study(direction="minimize", sampler=sampler)
+    study.optimize(lambda trial: objective(trial, X_train, y_train, params), n_trials=100)
     trial = study.best_trial
 
     print(f"Sampler is {study.sampler.__class__.__name__}")

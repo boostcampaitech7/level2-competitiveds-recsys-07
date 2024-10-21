@@ -3,6 +3,7 @@ from typing import Any
 import numpy as np
 import optuna
 import pandas as pd
+from optuna.samplers import TPESampler
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import KFold
@@ -19,18 +20,14 @@ X_test = test_data.drop(columns="deposit")
 y_test = test_data["deposit"]
 
 
-def rf_model_train(
-    trial: Any, X_train: pd.DataFrame, y_train: pd.Series, cv: int
-) -> float:
+def rf_model_train(trial: Any, X_train: pd.DataFrame, y_train: pd.Series, cv: int) -> float:
 
     params = {
         "n_estimators": trial.suggest_int("n_estimators", 50, 300),
         "max_depth": trial.suggest_int("max_depth", 3, 30),
         "min_samples_split": trial.suggest_int("min_samples_split", 2, 20),
         "min_samples_leaf": trial.suggest_int("min_samples_leaf", 1, 10),
-        "max_features": trial.suggest_categorical(
-            "max_features", ["auto", "sqrt", "log2"]
-        ),
+        "max_features": trial.suggest_categorical("max_features", ["auto", "sqrt", "log2"]),
         "bootstrap": trial.suggest_categorical("bootstrap", [True, False]),
         "random_state": 42,
     }
@@ -60,10 +57,11 @@ def rf_model_train(
 
 
 # Initialize and run the study
-study = optuna.create_study(direction="minimize")  # Minimize MAE
-study.optimize(
-    lambda trial: rf_model_train(trial, X_train, y_train, cv=5), n_trials=100
-)
+seed = 42
+sampler = TPESampler(seed=seed)
+
+study = optuna.create_study(direction="minimize", sampler=sampler)  # Minimize MAE
+study.optimize(lambda trial: rf_model_train(trial, X_train, y_train, cv=5), n_trials=100)
 
 # Output the results of the best trial
 trial = study.best_trial
@@ -81,9 +79,9 @@ feature_importances = rf_model.feature_importances_
 features = X_train.columns
 
 # Print feature importances
-importance_df = pd.DataFrame(
-    {"Feature": features, "Importance": feature_importances}
-).sort_values(by="Importance", ascending=False)
+importance_df = pd.DataFrame({"Feature": features, "Importance": feature_importances}).sort_values(
+    by="Importance", ascending=False
+)
 
 print("\nFeature Importances:")
 print(importance_df)
