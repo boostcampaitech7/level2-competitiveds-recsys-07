@@ -1,4 +1,6 @@
+import pandas as pd
 from haversine import haversine
+from sklearn.neighbors import KNeighborsRegressor
 
 
 def group_by_distance(df, k=20):
@@ -20,3 +22,25 @@ def group_by_distance(df, k=20):
     df.loc[df["distance"] <= k, "distance_class"] = 0
 
     return df
+
+
+def knn_clustering(df_train, df_test, features=["latitude", "longitude"], k=2):
+    x_train = df_train[features]
+    y_train = df_train["deposit"]
+
+    x_test = df_test[features]
+
+    knn_regressor = KNeighborsRegressor(n_neighbors=k)
+    knn_regressor.fit(x_train, y_train)
+
+    # Train dataset
+    df_train["pred_deposit"] = knn_regressor.predict(x_train)
+    df_train["cluster"] = pd.cut(df_train["pred_deposit"], bins=[0, 50000, float("inf")], labels=[0, 1]).astype(int)
+    df_train["cluster"] = df_train["cluster"].astype("category")
+
+    # Test dataset
+    df_test["pred_deposit"] = knn_regressor.predict(x_test)
+    df_test["cluster"] = pd.cut(df_test["pred_deposit"], bins=[0, 50000, float("inf")], labels=[0, 1]).astype(int)
+    df_test["cluster"] = df_test["cluster"].astype("category")
+
+    return df_train, df_test
