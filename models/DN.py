@@ -74,7 +74,7 @@ def objective_deeplearning(trial):
     # Hyperparameter search space
     num_layers = trial.suggest_int('num_layers', 1, 3)
     units = [trial.suggest_int(f'n_units_l{i}', 16, 128) for i in range(num_layers)]
-    activation = trial.suggest_categorical('activation', [nn.ReLU, nn.Tanh])
+    activation = trial.suggest_categorical('activation', [nn.ReLU(), nn.Tanh()])
     learning_rate = trial.suggest_loguniform('learning_rate', 1e-5, 1e-1)
     batch_size = trial.suggest_int('batch_size', 16, 128)
     epochs = trial.suggest_int('epochs', 10, 300)  # Suggesting number of epochs
@@ -101,8 +101,8 @@ def objective_deeplearning(trial):
         train_dataset = TensorDataset(x_train_fold, y_train_fold)
         train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
-        # Reset model weights for each fold
-        model.apply(lambda m: m.reset_parameters() if hasattr(m, 'reset_parameters') else None)
+
+        model = Net(input_size=X_train.shape[1], num_layers=num_layers, units=units, activation=activation).to(device)
 
         # Train the model for the number of epochs suggested by Optuna
         for epoch in range(epochs):  # Epoch is now part of the hyperparameter search space
