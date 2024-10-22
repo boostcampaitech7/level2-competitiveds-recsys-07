@@ -1,6 +1,6 @@
 import pandas as pd
 from haversine import haversine
-from sklearn.neighbors import KNeighborsRegressor
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
 
 
 def group_by_distance(df, k=20):
@@ -44,3 +44,35 @@ def knn_clustering(df_train, df_test, features=["latitude", "longitude"], k=2):
     df_test["cluster"] = df_test["cluster"].astype("category")
 
     return df_train, df_test
+
+
+def knn_clf_clustering(df_train, df_test, bins, labels, features=["latitude", "longitude"], k=10):
+    # 위도,경도 그룹화(평균 전세가 생성)
+    df_train_mean = df_train.groupby(["latitude", "longitude"])[["deposit"]].mean()
+    df_train_mean.reset_index(inplace=True)
+
+    # train cluster 생성
+    df_train_mean["cluster"] = pd.cut(df_train_mean["deposit"], bins=bins, labels=labels).astype(int)
+
+    # KNN
+    x_train = df_train_mean[features]
+    y_train = df_train_mean["cluster"]
+
+    knn_regressor = KNeighborsClassifier(n_neighbors=k)
+    knn_regressor.fit(x_train, y_train)
+
+    # predict cluster
+    df_test_cluster = df_test.copy()
+    x_test = df_test[features]
+    y_pred = knn_regressor.predict(x_test)
+    df_test_cluster["cluster"] = y_pred
+
+    df_train_cluster = pd.merge(
+        df_train, df_train_mean[["latitude", "longitude", "cluster"]], on=["latitude", "longitude"]
+    )
+
+    # Change type
+    df_train_cluster["cluster"] = df_train_cluster["cluster"].astype("category")
+    df_test_cluster["cluster"] = df_test_cluster["cluster"].astype("category")
+
+    return df_train_cluster, df_test_cluster
