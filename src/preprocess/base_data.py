@@ -1,10 +1,7 @@
-import os
-import numpy as np 
 import pandas as pd
 
-
 # Raw 데이터 디렉토리 경로
-data_path = '../../../data'
+data_path = "../../../data"
 
 df_train = pd.read_csv(f"{data_path}/train.csv")
 # df_test = pd.read_csv(f"{data_path}/test.csv")
@@ -21,7 +18,7 @@ print("subway shape: ", df_subway.shape)
 
 
 # train: 중복제거, age 음수 제거
-df_train[df_train.age >= 0].reset_index(drop=True).drop(columns='index').to_csv("train.csv", index=False)
+df_train[df_train.age >= 0].to_csv("train.csv", index=False)
 
 # 공원: 중복제거, 면적 0 이하 제거
 df_park_pp = df_park.drop_duplicates()

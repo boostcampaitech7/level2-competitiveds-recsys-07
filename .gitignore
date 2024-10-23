@@ -250,3 +250,5 @@ data
 *.csv
 *.ipynb
 *.html
+mlruns
+mlartifacts
