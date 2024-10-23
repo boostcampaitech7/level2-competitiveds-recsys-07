@@ -13,10 +13,20 @@ from xgboost import XGBRegressor
 def load_data(train_path: str, test_path: str):
     train_data = pd.read_csv(train_path)
     test_data = pd.read_csv(test_path)
+    
+    if "index" in X_train.columns:
+        X_train = X_train.drop(columns="index")
+    if "index" in X_test.columns:
+        X_test = X_test.drop(columns="index")
+
+    if list(X_train.columns.sort_values()) != list(X_test.columns.sort_values()):
+        raise ValueError("Train and Test columns do not match.")
+        sys.exit()
+        
     X_train = train_data.drop(columns="deposit")
     y_train = train_data["deposit"]
-    X_test = test_data.drop(columns="deposit")
-    y_test = test_data["deposit"]
+    X_test = test_data.copy()
+    
     return X_train, y_train, X_test, y_test
 
 
