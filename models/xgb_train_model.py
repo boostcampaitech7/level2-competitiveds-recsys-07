@@ -10,15 +10,13 @@ from sklearn.model_selection import KFold
 from xgboost import XGBRegressor
 
 # 함수화 함수 따로 만들기 (data_pre_processor로 넣기)
-ryu_data = pd.read_csv("/data/ephemeral/home/data/ryu/train.csv")
-ryu_data_test = pd.read_csv("/data/ephemeral/home/data/ryu/test.csv")
-yang_data = pd.read_csv("/data/ephemeral/home/data/yang/train.csv")
-yang_data_test = pd.read_csv("/data/ephemeral/home/data/yang/test.csv")
+sample_submission = pd.read_csv("/data/ephemeral/home/data/original/sample_submission.csv")
+train_path = "/data/ephemeral/home/data/original/yangryu_train1.csv"
+test_path = "/data/ephemeral/home/data/original/yangryu_test1.csv"
 
-new_columns = [col for col in yang_data.columns if col != "index" and col not in ryu_data.columns]
-train_data = pd.merge(ryu_data, yang_data[["index"] + new_columns], on="index", how="left")
-test_data = pd.merge(ryu_data_test, yang_data_test[["index"] + new_columns], on="index", how="left")
 
+train_data = pd.read_csv(train_path)
+test_data = pd.read_csv(test_path)
 # train 및 test 구분
 X_train = train_data.drop(columns="deposit")
 y_train = train_data["deposit"]
@@ -41,11 +39,16 @@ def xgb_model_train(trial: Any, X_train: pd.DataFrame, y_train: pd.Series, cv: i
 
     params = {
         "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.3),
-        "max_depth": trial.suggest_int("max_depth", 3, 30),
-        "n_estimators": trial.suggest_int("n_estimators", 50, 300),
+        "max_depth": trial.suggest_int("max_depth", 6, 10),
+        "n_estimators": trial.suggest_int("n_estimators", 100, 500),
+        "min_child_weight": trial.suggest_int("min_child_weight", 5, 20),
         "colsample_bytree": trial.suggest_float("colsample_bytree", 0.5, 1.0),
         "subsample": trial.suggest_float("subsample", 0.5, 1.0),
         "random_state": 42,
+        "eval_metric": "mae",
+        "early_stopping_rounds": 35,
+        "reg_alpha": trial.suggest_float("reg_alpha", 0, 10),  # L1 regularization
+        "reg_lambda": trial.suggest_float("reg_lambda", 0, 10),
         "tree_method": "hist",
         "device": "cuda",
     }

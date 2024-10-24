@@ -7,43 +7,17 @@ from lightgbm import LGBMRegressor
 from sklearn.metrics import mean_absolute_error
 
 # 베이스라인 모델 LightGBM
-han_data = pd.read_csv("/data/ephemeral/home/data/han/train.csv")
-han_data_test = pd.read_csv("/data/ephemeral/home/data/han/test.csv")
-ryu_data = pd.read_csv("/data/ephemeral/home/data/ryu/train.csv")
-ryu_data_test = pd.read_csv("/data/ephemeral/home/data/ryu/test.csv")
-yang_data = pd.read_csv("/data/ephemeral/home/data/yang/train.csv")
-yang_data_test = pd.read_csv("/data/ephemeral/home/data/yang/test.csv")
 
 sample_submission = pd.read_csv("/data/ephemeral/home/data/original/sample_submission.csv")
+train_path = "/data/ephemeral/home/data/original/yangryu_train1.csv"
+test_path = "/data/ephemeral/home/data/original/yangryu_test1.csv"
 
-han_data = han_data.sort_values(by="index")
-han_data = han_data.reset_index().drop(columns="level_0")
-han_data_test = han_data_test.sort_values(by="index")
-han_data_test = han_data_test.reset_index().drop(columns="level_0")
 
-new_columns_train_ryu = [col for col in ryu_data.columns if col != "index" and col not in han_data.columns]
-
-merge1_train_data = pd.merge(han_data, ryu_data[["index"] + new_columns_train_ryu], on="index", how="left")
-
-new_columns_train_yang = [col for col in yang_data.columns if col != "index" and col not in merge1_train_data.columns]
-
-merge2_train_data = pd.merge(merge1_train_data, yang_data[["index"] + new_columns_train_yang], on="index", how="left")
-
-new_columns_test_ryu = [col for col in ryu_data_test.columns if col != "index" and col not in han_data_test.columns]
-
-merge1_test_data = pd.merge(han_data_test, ryu_data_test[["index"] + new_columns_test_ryu], on="index", how="left")
-
-new_columns_test_yang = [
-    col for col in yang_data_test.columns if col != "index" and col not in merge1_test_data.columns
-]
-
-merge2_test_data = pd.merge(merge1_test_data, yang_data_test[["index"] + new_columns_test_yang], on="index", how="left")
-
-train_data = merge2_train_data
-test_data = merge2_test_data
+train_data = pd.read_csv(train_path)
+test_data = pd.read_csv(test_path)
 
 # train 및 test 구분
-X_train = train_data.drop(columns=["deposit", "deposit_mean"])
+X_train = train_data.drop(columns=["deposit"])
 y_train = train_data[["contract_year_month", "deposit"]]
 X_test = test_data.copy()
 

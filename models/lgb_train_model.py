@@ -8,28 +8,42 @@ from optuna.samplers import TPESampler
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import KFold
 
-# 함수화 함수 따로 만들기 (data_pre_processor로 넣기)
-train_data = pd.read_csv("../../data/train.csv")
-test_data = pd.read_csv("../../data/test.csv")
+# sample_submission = pd.read_csv("/data/ephemeral/home/data/original/sample_submission.csv")
+train_path = "/data/ephemeral/home/data/han/final_train.csv"
+test_path = "/data/ephemeral/home/data/han/final_test.csv"
 
+
+train_data = pd.read_csv(train_path)
+test_data = pd.read_csv(test_path)
 
 # train 및 test 구분
 X_train = train_data.drop(columns="deposit")
 y_train = train_data["deposit"]
-X_test = test_data
+X_test = test_data.copy()
 
+if "index" in X_train.columns:
+    X_train = X_train.drop(columns="index")
+if "index" in X_test.columns:
+    X_test = X_test.drop(columns="index")
+
+if list(X_train.columns) != list(X_test.columns):
+    raise ValueError("Train and Test columns do not match.")
+    sys.exit()
 
 def lgb_model_train(trial: Any, X_train: pd.DataFrame, y_train: pd.Series, cv: int) -> float:
 
     params = {
-        "n_estimators": trial.suggest_int("n_estimators", 50, 300),
-        "max_depth": trial.suggest_int("max_depth", 3, 30),
         "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.3),
-        "num_leaves": trial.suggest_int("num_leaves", 20, 300),
-        "min_data_in_leaf": trial.suggest_int("min_data_in_leaf", 20, 100),
-        "feature_fraction": trial.suggest_float("feature_fraction", 0.5, 1.0),
-        "bagging_fraction": trial.suggest_float("bagging_fraction", 0.5, 1.0),
+        "max_depth": trial.suggest_int("max_depth", 6, 10),
+        "n_estimators": trial.suggest_int("n_estimators", 100, 800),
+        "min_child_weight": trial.suggest_int("min_child_weight", 5, 20),
+        "colsample_bytree": trial.suggest_float("colsample_bytree", 0.5, 1.0),
+        "subsample": trial.suggest_float("subsample", 0.5, 1.0),
+        "lambda_l1": trial.suggest_float("lambda_l1", 0, 10),  # L1 regularization
+        "lambda_l2": trial.suggest_float("lambda_l2", 0, 10),  # L2 regularization
         "random_state": 42,
+        "metric": "mae",
+        "early_stopping_rounds": 35
     }
 
     kfold = KFold(n_splits=cv, shuffle=True, random_state=42)
@@ -47,8 +61,6 @@ def lgb_model_train(trial: Any, X_train: pd.DataFrame, y_train: pd.Series, cv: i
             x_train_fold,
             y_train_fold,
             eval_set=[(x_valid_fold, y_valid_fold)],
-            early_stopping_rounds=50,
-            verbose=False,
         )
 
         # Predict on validation set
