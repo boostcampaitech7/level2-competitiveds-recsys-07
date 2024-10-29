@@ -103,6 +103,18 @@
 - xgboost
 - Ridge
 
+<br/>
+
+| Model      | validation MAE | 리더보드 MAE |
+| ---------- | -------------- | ------------ |
+| lightgbm   | 3925           | 4313         |
+| xgboost    | 3765           | 3572         |
+| meta model | 2700           | 3793         |
+
+
+
+
+
 
 
 <br/><br/>
