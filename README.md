@@ -82,11 +82,11 @@
 
 | 데이터 구분     | 의미                                                         | Features                            |
 | --------------- | ------------------------------------------------------------ | ----------------------------------- |
-| 기반시설        | 아파트 반경 거리별 기반시설의 수                             | {facility}_count_{radius}m          |
-|                 | 아파트 반경 거리별 기반시설의 존재유무                       | {facility}_count_{radius}m_presence |
-| 기반시설 (rank) | 계약연월 기준 가장 가까운 주변시설의 6개월 전 rank           | (facility)_rank                     |
-|                 | rank를 가져온 주변시설까지의 거리                            | (facility)_rank_distance            |
-|                 | 각 rank와 distance를 활용한 weighted rank (rank / rank_distance) | (facility)_wr                       |
+| 기반시설        | 아파트 반경 거리별 기반시설의 수                             | {facility}\_count\_{radius}m          |
+|                 | 아파트 반경 거리별 기반시설의 존재유무                       | {facility}\_count\_{radius}m_presence |
+| 기반시설 (rank) | 계약연월 기준 가장 가까운 주변시설의 6개월 전 rank           | {facility}\_rank                     |
+|                 | rank를 가져온 주변시설까지의 거리                            | {facility}\_rank_distance            |
+|                 | 각 rank와 distance를 활용한 weighted rank (rank / rank_distance) | {facility}\_wr                       |
 | 예금/금리       | 시차(lag) 적용된 금리, 차분(정상성)                          | interest_rate_lag_diff              |
 | 지역구분        | median point 부터의 거리(km)                                 | distance                            |
 |                 | 거리 기반 중심 지역 여부                                     | distance_class                      |
